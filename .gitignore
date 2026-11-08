@@ -1,0 +1,69 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# .gitignore — India Civic Disruption Monitoring System
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Secrets & environment
+.env
+*.env
+
+# Raw dataset files — do NOT redistribute without checking the licence
+data/raw/*.csv
+data/raw/*.csv.gz
+data/raw/*.xlsx
+
+# SQLite database files
+*.db
+*.db-shm
+*.db-wal
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.venv/
+venv/
+env/
+# .python-version is committed (pins Render's build to Python 3.12)
+!.python-version
+
+# Packaged DB snapshots (uploaded to GitHub Releases, never committed)
+snapshots/
+
+# Alembic (keep migrations, ignore cache)
+# alembic/versions/__pycache__/
+
+# IDE
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Tests
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# Frontend build artifacts
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+
+# Logs
+*.log
+logs/
+
+# Reports (generated — regenerate from script)
+reports/
+
+# Temp
+tmp/
