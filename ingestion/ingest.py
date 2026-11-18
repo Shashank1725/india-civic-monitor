@@ -71,10 +71,8 @@ logger = logging.getLogger(__name__)
 # ─────────────────────────────────────────────────────────────────────────────
 # Config from environment
 # ─────────────────────────────────────────────────────────────────────────────
-DATASET_DIR = Path(os.getenv(
-    "DATASET_DIR",
-    str(Path.home() / "Downloads" / "DATASci" / "Dataset")
-))
+_raw_dataset_dir = os.getenv("DATASET_DIR", "./Dataset")
+DATASET_DIR = (PROJECT_ROOT / _raw_dataset_dir).resolve() if not Path(_raw_dataset_dir).is_absolute() else Path(_raw_dataset_dir)
 BATCH_SIZE = int(os.getenv("BATCH_SIZE", "500"))  # validation chunk size (not DB insert size)
 
 # Status values we treat as "open" vs "closed" for aggregate counts
