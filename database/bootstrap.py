@@ -108,18 +108,28 @@ class _StreamDecompressor:
         self._out = out
         path = url.split("?")[0].lower()
         if path.endswith(".gz") or path.endswith(".gzip"):
+            self._mode = "gzip"
             self._obj = zlib.decompressobj(16 + zlib.MAX_WBITS)
-        else:
+        elif path.endswith(".zst") or path.endswith(".zstd"):
+            self._mode = "zstd"
             import zstandard
-
             self._obj = zstandard.ZstdDecompressor().decompressobj()
+        else:
+            # Raw uncompressed stream (e.g. .db)
+            self._mode = "raw"
+            self._obj = None
 
     def feed(self, chunk: bytes) -> None:
+        if self._mode == "raw":
+            self._out.write(chunk)
+            return
         data = self._obj.decompress(chunk)
         if data:
             self._out.write(data)
 
     def finish(self) -> None:
+        if self._mode == "raw":
+            return
         data = self._obj.flush()
         if data:
             self._out.write(data)
