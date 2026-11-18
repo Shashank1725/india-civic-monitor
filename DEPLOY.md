@@ -35,7 +35,7 @@ git add .
 git commit -m "India Civic Monitor: Render-ready single-service deploy"
 
 # Create the repo on github.com first, then:
-git remote add origin https://github.com/<you>/india-civic-monitor.git
+git remote add origin https://github.com/Shashank1725/india-civic-monitor.git
 git push -u origin main
 ```
 
@@ -65,7 +65,7 @@ Upload it to GitHub:
 Your snapshot URL will be:
 
 ```text
-https://github.com/<you>/india-civic-monitor/releases/download/v1/india_civic_monitor.db.zst
+https://github.com/Shashank1725/india-civic-monitor/releases/download/v1/india_civic_monitor.db.zst
 ```
 
 > Re-run the script (and re-upload as `v2`…) whenever the data changes; update
@@ -88,7 +88,7 @@ https://github.com/<you>/india-civic-monitor/releases/download/v1/india_civic_mo
 
 | Key | Value |
 |---|---|
-| `DB_SNAPSHOT_URL` | `https://github.com/<you>/india-civic-monitor/releases/download/v1/india_civic_monitor.db.zst` |
+| `DB_SNAPSHOT_URL` | `https://github.com/Shashank1725/india-civic-monitor/releases/download/v1/india_civic_monitor.db.zst` |
 | `DB_SNAPSHOT_SHA256` | the sha256 printed in Step 2 |
 
 (`DATABASE_URL`, `DATASET_DIR`, `PYTHON_VERSION` handling already come from
