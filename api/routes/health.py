@@ -23,4 +23,5 @@ def get_health():
         timestamp=datetime.now(),
         data_ready=data_ready(),
         bootstrap_state=status.get("state", "unknown"),
+        bootstrap_detail=status.get("detail", ""),
     )

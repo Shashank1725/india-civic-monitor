@@ -21,6 +21,7 @@ class HealthResponse(BaseModel):
     data_ready: bool = True
     # Background bootstrap lifecycle: starting/downloading/ingesting/ready/failed
     bootstrap_state: str = "ready"
+    bootstrap_detail: str = ""
 
 
 class MetadataResponse(BaseModel):

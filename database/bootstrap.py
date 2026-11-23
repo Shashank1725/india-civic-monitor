@@ -51,9 +51,9 @@ _started = False
 
 # ── Status helpers (read by /health) ─────────────────────────────────────────
 def data_ready() -> bool:
-    """True once the database contains data (checked once, then cached)."""
+    """True once the database contains data (re-checked until ready)."""
     with _lock:
-        if _status["data_ready"] is None:
+        if _status["data_ready"] is not True:
             try:
                 _status["data_ready"] = _count_rows() > 0
             except Exception:
@@ -174,12 +174,12 @@ def _stream_snapshot(url: str, sha256: str | None, dest: Path) -> None:
         logger.warning("DB_SNAPSHOT_SHA256 not set — skipping hash verification")
 
     # 2. SQLite sanity check + row-count sanity check
+    # Avoid memory-heavy PRAGMA quick_check to protect 512 MB free tier limits
     t0 = time.monotonic()
     con = sqlite3.connect(str(tmp))
     try:
-        check = con.execute("PRAGMA quick_check").fetchone()[0]
-        if check != "ok":
-            raise RuntimeError(f"sqlite quick_check failed: {check}")
+        # Lightweight check: verify table can be queried
+        con.execute("SELECT 1 FROM service_requests LIMIT 1")
         rows = int(con.execute("SELECT COUNT(*) FROM service_requests").fetchone()[0])
     finally:
         con.close()
@@ -187,7 +187,7 @@ def _stream_snapshot(url: str, sha256: str | None, dest: Path) -> None:
         tmp.unlink(missing_ok=True)
         raise RuntimeError(f"snapshot has too few rows ({rows} < {MIN_SNAPSHOT_ROWS})")
     logger.info(
-        "snapshot verified: %s rows, quick_check ok (%.1fs)",
+        "snapshot verified: %s rows ready (%.1fs)",
         f"{rows:,}",
         time.monotonic() - t0,
     )

@@ -16,19 +16,32 @@ from api.schemas import MetadataResponse, FilterOptionsResponse
 router = APIRouter(prefix="/api", tags=["Metadata"])
 
 
+# In-memory cache for fast metadata response
+_METADATA_CACHE: Optional[MetadataResponse] = None
+
+
 @router.get("/metadata", response_model=MetadataResponse)
 def get_metadata(db: Session = Depends(get_db)):
-    # 1. Total records, wards, categories, min date, max date
-    stats_query = text("""
-        SELECT
-            COUNT(*) AS total_records,
-            MIN(DATE(grievance_date)) AS min_date,
-            MAX(DATE(grievance_date)) AS max_date
-        FROM service_requests
-        WHERE is_valid = 1
-    """)
-    stats_row = db.execute(stats_query).mappings().first()
+    global _METADATA_CACHE
+    if _METADATA_CACHE is not None and _METADATA_CACHE.total_records > 0:
+        return _METADATA_CACHE
 
+    # Fast row count: if empty, return 0
+    total_records = db.execute(text("SELECT COUNT(*) FROM service_requests")).scalar() or 0
+    if total_records == 0:
+        return MetadataResponse(
+            total_records=0,
+            total_wards=0,
+            total_categories=0,
+            earliest_record=None,
+            latest_record=None,
+            days_span=0,
+            freshness_status="DATABASE LOADING",
+            last_ingestion_time=None,
+        )
+
+    # Use precomputed daily_aggregates for fast min/max dates
+    min_max = db.execute(text("SELECT MIN(agg_date), MAX(agg_date) FROM daily_aggregates")).first()
     wards_count = db.execute(text("SELECT COUNT(DISTINCT ward_name) FROM daily_aggregates")).scalar() or 0
     categories_count = db.execute(text("SELECT COUNT(DISTINCT category) FROM daily_aggregates")).scalar() or 0
 
@@ -42,17 +55,20 @@ def get_metadata(db: Session = Depends(get_db)):
 
     last_ingestion_time = last_run["completed_at"] if last_run and last_run["completed_at"] else (last_run["started_at"] if last_run else None)
 
-    min_d_str = stats_row["min_date"] if stats_row else None
-    max_d_str = stats_row["max_date"] if stats_row else None
+    min_d_str = str(min_max[0]) if min_max and min_max[0] else None
+    max_d_str = str(min_max[1]) if min_max and min_max[1] else None
 
     days_span = 0
     if min_d_str and max_d_str:
-        d1 = datetime.strptime(min_d_str, "%Y-%m-%d").date()
-        d2 = datetime.strptime(max_d_str, "%Y-%m-%d").date()
-        days_span = (d2 - d1).days
+        try:
+            d1 = datetime.strptime(min_d_str, "%Y-%m-%d").date()
+            d2 = datetime.strptime(max_d_str, "%Y-%m-%d").date()
+            days_span = (d2 - d1).days
+        except Exception:
+            pass
 
-    return MetadataResponse(
-        total_records=stats_row["total_records"] if stats_row else 0,
+    res = MetadataResponse(
+        total_records=total_records,
         total_wards=wards_count,
         total_categories=categories_count,
         earliest_record=min_d_str,
@@ -61,6 +77,8 @@ def get_metadata(db: Session = Depends(get_db)):
         freshness_status="HISTORICAL SNAPSHOT",
         last_ingestion_time=last_ingestion_time,
     )
+    _METADATA_CACHE = res
+    return res
 
 
 @router.get("/filters", response_model=FilterOptionsResponse)

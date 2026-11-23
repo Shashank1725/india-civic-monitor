@@ -8,9 +8,16 @@ import {
   AnomalyItem,
   QualityCheckItem,
   IngestionRunItem,
+  HealthStatus,
 } from './types';
 
 const API_BASE = '/api';
+
+export async function fetchHealth(): Promise<HealthStatus> {
+  const res = await fetch('/health');
+  if (!res.ok) throw new Error('Failed to fetch health');
+  return res.json();
+}
 
 export async function fetchMetadata(): Promise<Metadata> {
   const res = await fetch(`${API_BASE}/metadata`);

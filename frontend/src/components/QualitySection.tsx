@@ -53,7 +53,9 @@ export const QualitySection: React.FC<QualitySectionProps> = ({ metadata }) => {
             <FileCheck className="w-4 h-4 text-teal-400" />
             <span>Geographic Completeness</span>
           </div>
-          <div className="text-2xl font-bold text-teal-400 mt-2">100.0% Ward-Level</div>
+          <div className="text-2xl font-bold text-teal-400 mt-2">
+            {metadata && metadata.total_records > 0 ? '100.0% Ward-Level' : 'Unavailable'}
+          </div>
           <p className="text-xs text-slate-400 mt-1">
             0% missing wards; 0% GPS pin coordinates present in source data
           </p>
@@ -64,9 +66,11 @@ export const QualitySection: React.FC<QualitySectionProps> = ({ metadata }) => {
             <History className="w-4 h-4 text-amber-400" />
             <span>Dataset Freshness</span>
           </div>
-          <div className="text-2xl font-bold text-amber-300 mt-2">Historical Snapshot</div>
+          <div className="text-2xl font-bold text-amber-300 mt-2">
+            {metadata && metadata.total_records > 0 ? 'Historical Snapshot' : 'Unavailable'}
+          </div>
           <p className="text-xs text-slate-400 mt-1">
-            Latest entry: {metadata?.latest_record} (Dataset spans 2020–2025)
+            Latest entry: {metadata?.latest_record || 'Connecting...'} (Dataset spans 2020–2025)
           </p>
         </div>
       </div>
@@ -80,7 +84,11 @@ export const QualitySection: React.FC<QualitySectionProps> = ({ metadata }) => {
               Data Validation & Schema Conformance Rule Audit
             </h3>
           </div>
-          <span className="text-xs text-slate-400">Evaluated across all 766,648 records</span>
+          <span className="text-xs text-slate-400">
+            {metadata && metadata.total_records > 0
+              ? `Evaluated across all ${metadata.total_records.toLocaleString()} records`
+              : 'Audit data loading or unavailable'}
+          </span>
         </div>
 
         <div className="overflow-x-auto">

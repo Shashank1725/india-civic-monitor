@@ -5,9 +5,10 @@ import { AlertTriangle, ShieldAlert, ArrowUpRight, CheckCircle2 } from 'lucide-r
 interface AnomalyTableProps {
   anomalies: AnomalyItem[];
   onSelectWard: (ward: string) => void;
+  loading?: boolean;
 }
 
-export const AnomalyTable: React.FC<AnomalyTableProps> = ({ anomalies, onSelectWard }) => {
+export const AnomalyTable: React.FC<AnomalyTableProps> = ({ anomalies, onSelectWard, loading = false }) => {
   const getSeverityBadge = (severity: string) => {
     switch (severity) {
       case 'CRITICAL':
@@ -54,7 +55,12 @@ export const AnomalyTable: React.FC<AnomalyTableProps> = ({ anomalies, onSelectW
         </p>
       </div>
 
-      {anomalies.length === 0 ? (
+      {loading ? (
+        <div className="py-12 text-center text-slate-400 flex flex-col items-center justify-center space-y-2">
+          <div className="w-6 h-6 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm">Evaluating historical weekday rolling baselines & Z-scores...</p>
+        </div>
+      ) : anomalies.length === 0 ? (
         <div className="py-12 text-center text-slate-500">
           <CheckCircle2 className="w-10 h-10 mx-auto mb-2 text-emerald-500/50" />
           <p className="text-sm">No abnormal disruption spikes detected for the current filter criteria.</p>

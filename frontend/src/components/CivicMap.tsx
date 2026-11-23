@@ -142,7 +142,7 @@ export const CivicMap: React.FC<CivicMapProps> = ({
 
     layer.bindTooltip(
       `
-      <div style="font-family: inherit; font-size: 12px; padding: 4px;">
+      <div style="font-family: inherit; font-size: 12px; padding: 4px; pointer-events: none;">
         <div style="font-weight: 700; color: #f8fafc; display: flex; align-items: center; gap: 4px;">
           ${wardName}
           ${isAnomalous ? '<span style="background: #f43f5e; color: #fff; padding: 1px 4px; border-radius: 4px; font-size: 10px;">ANOMALY</span>' : ''}
@@ -152,7 +152,7 @@ export const CivicMap: React.FC<CivicMapProps> = ({
         </div>
       </div>
       `,
-      { sticky: true, opacity: 0.95 }
+      { sticky: false, direction: 'top', offset: [0, -10], opacity: 0.95 }
     );
 
     layer.on({
@@ -164,11 +164,10 @@ export const CivicMap: React.FC<CivicMapProps> = ({
       mouseover: (e: any) => {
         const target = e.target;
         target.setStyle({
-          weight: 3,
+          weight: 2.5,
           color: '#ffffff',
           fillOpacity: 0.85,
         });
-        target.bringToFront();
       },
       mouseout: (e: any) => {
         const target = e.target;

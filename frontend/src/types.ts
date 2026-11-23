@@ -1,3 +1,12 @@
+export interface HealthStatus {
+  status: string;
+  database: string;
+  timestamp: string;
+  data_ready: boolean;
+  bootstrap_state: string;
+  bootstrap_detail?: string;
+}
+
 export interface Metadata {
   total_records: number;
   total_wards: number;

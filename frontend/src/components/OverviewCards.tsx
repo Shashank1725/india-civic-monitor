@@ -7,6 +7,7 @@ interface OverviewCardsProps {
   areas: AreaSummary[];
   anomalies: AnomalyItem[];
   filteredTotal: number;
+  loading?: boolean;
 }
 
 export const OverviewCards: React.FC<OverviewCardsProps> = ({
@@ -14,14 +15,22 @@ export const OverviewCards: React.FC<OverviewCardsProps> = ({
   areas,
   anomalies,
   filteredTotal,
+  loading = false,
 }) => {
+  const isDataReady = Boolean(metadata && metadata.total_records > 0 && !loading);
   const anomalyCount = anomalies.filter((a) => a.is_anomaly).length;
 
   const cards = [
     {
       title: 'Total Grievances',
-      value: metadata ? metadata.total_records.toLocaleString() : '---',
-      subtitle: `${metadata?.days_span || 0} days recorded (2020–2025)`,
+      value: loading
+        ? 'Loading...'
+        : metadata && metadata.total_records > 0
+        ? metadata.total_records.toLocaleString()
+        : 'Unavailable',
+      subtitle: isDataReady
+        ? `${metadata?.days_span || 0} days recorded (2020–2025)`
+        : 'Connecting to database snapshot...',
       icon: Files,
       color: 'from-blue-500/20 to-indigo-500/10',
       border: 'border-blue-500/30',
@@ -29,8 +38,12 @@ export const OverviewCards: React.FC<OverviewCardsProps> = ({
     },
     {
       title: 'Current Filter Volume',
-      value: filteredTotal ? filteredTotal.toLocaleString() : '0',
-      subtitle: 'Complaints in selected criteria',
+      value: loading
+        ? 'Loading...'
+        : isDataReady
+        ? filteredTotal.toLocaleString()
+        : 'Unavailable',
+      subtitle: isDataReady ? 'Complaints in selected criteria' : 'Awaiting filtered aggregate...',
       icon: Layers,
       color: 'from-emerald-500/20 to-teal-500/10',
       border: 'border-emerald-500/30',
@@ -38,8 +51,12 @@ export const OverviewCards: React.FC<OverviewCardsProps> = ({
     },
     {
       title: 'BBMP Monitored Wards',
-      value: metadata ? metadata.total_wards.toString() : '---',
-      subtitle: '100% Ward name coverage',
+      value: loading
+        ? 'Loading...'
+        : isDataReady
+        ? metadata!.total_wards.toString()
+        : 'Unavailable',
+      subtitle: isDataReady ? '100% Ward name coverage' : 'Loading municipal roster...',
       icon: MapPin,
       color: 'from-purple-500/20 to-violet-500/10',
       border: 'border-purple-500/30',
@@ -47,17 +64,25 @@ export const OverviewCards: React.FC<OverviewCardsProps> = ({
     },
     {
       title: 'Spike Anomalies Flagged',
-      value: anomalyCount.toString(),
-      subtitle: 'Statistically anomalous (Z ≥ 2.5σ)',
+      value: loading
+        ? 'Loading...'
+        : isDataReady
+        ? anomalyCount.toString()
+        : 'Unavailable',
+      subtitle: isDataReady ? 'Statistically anomalous (Z ≥ 2.5σ)' : 'Baseline evaluation pending...',
       icon: AlertTriangle,
-      color: anomalyCount > 0 ? 'from-amber-500/20 to-orange-500/10' : 'from-slate-800 to-slate-850',
-      border: anomalyCount > 0 ? 'border-amber-500/30' : 'border-slate-700/40',
-      iconColor: anomalyCount > 0 ? 'text-amber-400' : 'text-slate-400',
+      color: anomalyCount > 0 && isDataReady ? 'from-amber-500/20 to-orange-500/10' : 'from-slate-800 to-slate-850',
+      border: anomalyCount > 0 && isDataReady ? 'border-amber-500/30' : 'border-slate-700/40',
+      iconColor: anomalyCount > 0 && isDataReady ? 'text-amber-400' : 'text-slate-400',
     },
     {
       title: 'Spatial Completeness',
-      value: '100% Ward Level',
-      subtitle: 'Choropleth (0% Lat/Lon pins in source)',
+      value: loading
+        ? 'Loading...'
+        : isDataReady
+        ? '100% Ward Level'
+        : 'Unavailable',
+      subtitle: isDataReady ? 'Choropleth (0% Lat/Lon pins in source)' : 'Spatial audit pending...',
       icon: CheckCircle2,
       color: 'from-cyan-500/20 to-blue-500/10',
       border: 'border-cyan-500/30',
@@ -65,8 +90,12 @@ export const OverviewCards: React.FC<OverviewCardsProps> = ({
     },
     {
       title: 'Pipeline Ingestion Audit',
-      value: '0 Duplicates',
-      subtitle: 'Strict unique constraint & upsert',
+      value: loading
+        ? 'Loading...'
+        : isDataReady
+        ? '0 Duplicates'
+        : 'Unavailable',
+      subtitle: isDataReady ? 'Strict unique constraint & upsert' : 'Verification pending...',
       icon: ShieldCheck,
       color: 'from-teal-500/20 to-emerald-500/10',
       border: 'border-teal-500/30',

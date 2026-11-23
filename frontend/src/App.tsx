@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Header } from './components/Header';
 import { OverviewCards } from './components/OverviewCards';
 import { FilterBar } from './components/FilterBar';
@@ -7,7 +7,9 @@ import { AnalyticsCharts } from './components/AnalyticsCharts';
 import { AnomalyTable } from './components/AnomalyTable';
 import { AreaDrawer } from './components/AreaDrawer';
 import { QualitySection } from './components/QualitySection';
+import { FindingsSection } from './components/FindingsSection';
 import { Footer } from './components/Footer';
+import { RefreshCw, AlertCircle, Database, Loader2 } from 'lucide-react';
 
 import {
   Metadata,
@@ -16,8 +18,10 @@ import {
   DailyAggregate,
   CategoryAggregate,
   AnomalyItem,
+  HealthStatus,
 } from './types';
 import {
+  fetchHealth,
   fetchMetadata,
   fetchFilterOptions,
   fetchAreas,
@@ -29,9 +33,11 @@ import {
 export function App() {
   const [activeTab, setActiveTab] = useState<'overview' | 'map' | 'analytics' | 'anomalies' | 'quality'>('overview');
 
-  // Metadata & Options
+  // Metadata, Options & Health
   const [metadata, setMetadata] = useState<Metadata | null>(null);
   const [filterOptions, setFilterOptions] = useState<FilterOptions | null>(null);
+  const [healthStatus, setHealthStatus] = useState<HealthStatus | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Active Filter States
   const [startDate, setStartDate] = useState<string>('2025-05-01');
@@ -49,27 +55,69 @@ export function App() {
   const [categoryData, setCategoryData] = useState<CategoryAggregate[]>([]);
   const [anomalies, setAnomalies] = useState<AnomalyItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
 
-  // Initial load
-  useEffect(() => {
-    Promise.all([fetchMetadata(), fetchFilterOptions()])
-      .then(([meta, opts]) => {
-        setMetadata(meta);
-        setFilterOptions(opts);
-        if (opts.max_date) {
-          setEndDate(opts.max_date);
-          // Set start date to 60 days before max date for snappy initial view
-          const d = new Date(opts.max_date);
-          d.setDate(d.getDate() - 60);
-          setStartDate(d.toISOString().split('T')[0]);
-        }
-      })
-      .catch((err) => console.error('Error fetching init config:', err));
+  // Initial load & health monitoring
+  const loadInitData = useCallback(async () => {
+    setErrorMessage(null);
+    try {
+      const [h, meta, opts] = await Promise.all([
+        fetchHealth().catch(() => null),
+        fetchMetadata(),
+        fetchFilterOptions(),
+      ]);
+
+      if (h) setHealthStatus(h);
+      setMetadata(meta);
+      setFilterOptions(opts);
+
+      if (opts.max_date) {
+        setEndDate(opts.max_date);
+        const d = new Date(opts.max_date);
+        d.setDate(d.getDate() - 60);
+        setStartDate(d.toISOString().split('T')[0]);
+      }
+    } catch (err: any) {
+      console.error('Error fetching init config:', err);
+      setErrorMessage(
+        'Unable to reach backend service or database is still mounting. If the server just woke up, please wait a moment.'
+      );
+    }
   }, []);
+
+  useEffect(() => {
+    loadInitData();
+  }, [loadInitData, refreshTrigger]);
+
+  // Polling: If database is still empty or bootstrap is running, check /health every 5 seconds
+  useEffect(() => {
+    if (metadata && metadata.total_records > 0) return;
+
+    const timer = setInterval(async () => {
+      try {
+        const h = await fetchHealth();
+        setHealthStatus(h);
+        if (h.data_ready || h.bootstrap_state === 'ready') {
+          // Database is ready! Reload all metadata and dashboard data
+          await loadInitData();
+        }
+      } catch (e) {
+        // Server might be spinning up
+      }
+    }, 5000);
+
+    return () => clearInterval(timer);
+  }, [metadata, loadInitData]);
 
   // Fetch filtered data
   useEffect(() => {
+    if (!metadata || metadata.total_records === 0) {
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
+    setErrorMessage(null);
     Promise.all([
       fetchAreas({
         startDate: startDate || undefined,
@@ -103,9 +151,10 @@ export function App() {
       })
       .catch((err) => {
         console.error('Error loading dashboard data:', err);
+        setErrorMessage('Failed to load analytical aggregates. Please click Retry.');
         setLoading(false);
       });
-  }, [startDate, endDate, selectedCategory, selectedWard, anomalyOnly]);
+  }, [startDate, endDate, selectedCategory, selectedWard, anomalyOnly, metadata]);
 
   const handleResetFilters = () => {
     if (filterOptions?.max_date) {
@@ -119,13 +168,67 @@ export function App() {
     setAnomalyOnly(false);
   };
 
+  const handleManualRetry = () => {
+    setLoading(true);
+    setErrorMessage(null);
+    setRefreshTrigger((prev) => prev + 1);
+  };
+
   const filteredTotal = dailyData.reduce((acc, curr) => acc + curr.complaint_count, 0);
+  const isDbLoading = !metadata || metadata.total_records === 0;
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       <Header metadata={metadata} activeTab={activeTab} setActiveTab={setActiveTab} />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        {/* Status / Loading Notification Banner */}
+        {isDbLoading && (
+          <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
+            <div className="flex items-center space-x-3">
+              <Loader2 className="w-5 h-5 text-amber-400 animate-spin shrink-0" />
+              <div>
+                <div className="font-semibold text-sm text-amber-300">
+                  {healthStatus?.bootstrap_state === 'downloading'
+                    ? 'Downloading & Restoring Civic Database (766,648 Records)...'
+                    : 'Connecting to Database Snapshot...'}
+                </div>
+                <div className="text-xs text-amber-300/80 mt-0.5">
+                  Render Free Tier boots from cold storage in ~1–2 minutes. Auto-refreshing in background...
+                  {healthStatus?.bootstrap_detail ? ` (${healthStatus.bootstrap_detail})` : ''}
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={handleManualRetry}
+              className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-xs font-semibold text-amber-200 flex items-center space-x-1.5 transition-all self-end sm:self-auto shrink-0"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Check Now</span>
+            </button>
+          </div>
+        )}
+
+        {/* Error Alert Banner */}
+        {errorMessage && (
+          <div className="p-4 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
+            <div className="flex items-center space-x-3">
+              <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" />
+              <div>
+                <div className="font-semibold text-sm text-rose-300">Data Loading Issue</div>
+                <div className="text-xs text-rose-300/80 mt-0.5">{errorMessage}</div>
+              </div>
+            </div>
+            <button
+              onClick={handleManualRetry}
+              className="px-3.5 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-xs font-semibold text-rose-200 flex items-center space-x-1.5 transition-all self-end sm:self-auto shrink-0"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Retry Connection</span>
+            </button>
+          </div>
+        )}
+
         {/* Global Filter Bar */}
         <FilterBar
           options={filterOptions}
@@ -148,6 +251,7 @@ export function App() {
           areas={areas}
           anomalies={anomalies}
           filteredTotal={filteredTotal}
+          loading={loading || isDbLoading}
         />
 
         {/* Loading Indicator Bar */}
@@ -160,6 +264,9 @@ export function App() {
         {/* Tab 1: Overview */}
         {activeTab === 'overview' && (
           <div className="space-y-6">
+            {/* Key Findings Section */}
+            <FindingsSection />
+
             <CivicMap
               areas={areas}
               anomalies={anomalies}
@@ -175,6 +282,7 @@ export function App() {
             <AnomalyTable
               anomalies={anomalies}
               onSelectWard={(ward) => setDrawerWard(ward)}
+              loading={loading || isDbLoading}
             />
           </div>
         )}
@@ -212,12 +320,15 @@ export function App() {
 
         {/* Tab 3: Detailed Analytics */}
         {activeTab === 'analytics' && (
-          <AnalyticsCharts
-            dailyData={dailyData}
-            categoryData={categoryData}
-            areas={areas}
-            onSelectWard={(ward) => setDrawerWard(ward)}
-          />
+          <div className="space-y-6">
+            <FindingsSection />
+            <AnalyticsCharts
+              dailyData={dailyData}
+              categoryData={categoryData}
+              areas={areas}
+              onSelectWard={(ward) => setDrawerWard(ward)}
+            />
+          </div>
         )}
 
         {/* Tab 4: Anomaly Surveillance Feed */}
@@ -225,6 +336,7 @@ export function App() {
           <AnomalyTable
             anomalies={anomalies}
             onSelectWard={(ward) => setDrawerWard(ward)}
+            loading={loading || isDbLoading}
           />
         )}
 
