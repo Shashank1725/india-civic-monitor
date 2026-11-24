@@ -123,6 +123,10 @@ export const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({
                 width={110}
               />
               <Tooltip
+                labelStyle={{
+                    color: '#facc15',
+                    fontWeight: 'bold',
+                }}
                 formatter={(val: any, name: any, item: any) => [
                   `${Number(val).toLocaleString()} (${item.payload.percentage}%)`,
                   'Complaints',
