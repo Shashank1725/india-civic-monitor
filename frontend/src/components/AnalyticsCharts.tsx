@@ -77,6 +77,8 @@ export const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({
                   color: '#f8fafc',
                   fontSize: '12px',
                 }}
+                labelStyle={{ color: '#facc15' }}
+                itemStyle={{ color: '#facc15' }}
               />
               <Area
                 type="monotone"
