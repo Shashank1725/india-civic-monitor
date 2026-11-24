@@ -38,6 +38,7 @@ export function App() {
   const [filterOptions, setFilterOptions] = useState<FilterOptions | null>(null);
   const [healthStatus, setHealthStatus] = useState<HealthStatus | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [dataReady, setDataReady] = useState<boolean>(false);
 
   // Active Filter States
   const [startDate, setStartDate] = useState<string>('2025-05-01');
@@ -112,12 +113,15 @@ export function App() {
   // Fetch filtered data
   useEffect(() => {
     if (!metadata || metadata.total_records === 0) {
-      setLoading(false);
+      setLoading(true);
+      setDataReady(false);
       return;
     }
 
     setLoading(true);
+    setDataReady(false);
     setErrorMessage(null);
+
     Promise.all([
       fetchAreas({
         startDate: startDate || undefined,
@@ -147,12 +151,14 @@ export function App() {
         setDailyData(d);
         setCategoryData(c);
         setAnomalies(anom);
+        setDataReady(true);
         setLoading(false);
       })
       .catch((err) => {
         console.error('Error loading dashboard data:', err);
-        setErrorMessage('Failed to load analytical aggregates. Please click Retry.');
+        setDataReady(false);
         setLoading(false);
+        setErrorMessage('Failed to load records. Please retry.');
       });
   }, [startDate, endDate, selectedCategory, selectedWard, anomalyOnly, metadata]);
 
@@ -189,9 +195,7 @@ export function App() {
               <Loader2 className="w-5 h-5 text-amber-400 animate-spin shrink-0" />
               <div>
                 <div className="font-semibold text-sm text-amber-300">
-                  {healthStatus?.bootstrap_state === 'downloading'
-                    ? 'Downloading & Restoring Civic Database (766,648 Records)...'
-                    : 'Connecting to Database Snapshot...'}
+                  Loading records…
                 </div>
                 <div className="text-xs text-amber-300/80 mt-0.5">
                   Render Free Tier boots from cold storage in ~1–2 minutes. Auto-refreshing in background...
@@ -204,7 +208,7 @@ export function App() {
               className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-xs font-semibold text-amber-200 flex items-center space-x-1.5 transition-all self-end sm:self-auto shrink-0"
             >
               <RefreshCw className="w-3.5 h-3.5" />
-              <span>Check Now</span>
+              <span>Retry</span>
             </button>
           </div>
         )}
@@ -265,7 +269,7 @@ export function App() {
         {activeTab === 'overview' && (
           <div className="space-y-6">
             {/* Key Findings Section */}
-            <FindingsSection />
+            <FindingsSection loading={loading || isDbLoading} dataReady={dataReady} />
 
             <CivicMap
               areas={areas}
@@ -283,6 +287,7 @@ export function App() {
               anomalies={anomalies}
               onSelectWard={(ward) => setDrawerWard(ward)}
               loading={loading || isDbLoading}
+              error={errorMessage}
             />
           </div>
         )}
@@ -321,7 +326,7 @@ export function App() {
         {/* Tab 3: Detailed Analytics */}
         {activeTab === 'analytics' && (
           <div className="space-y-6">
-            <FindingsSection />
+            <FindingsSection loading={loading || isDbLoading} dataReady={dataReady} />
             <AnalyticsCharts
               dailyData={dailyData}
               categoryData={categoryData}
@@ -337,6 +342,7 @@ export function App() {
             anomalies={anomalies}
             onSelectWard={(ward) => setDrawerWard(ward)}
             loading={loading || isDbLoading}
+            error={errorMessage}
           />
         )}
 
