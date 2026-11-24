@@ -9,9 +9,14 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
+interface FindingsSectionProps {
+  loading: boolean;
+  dataReady: boolean;
+}
 
-export const FindingsSection: React.FC = () => {
+export const FindingsSection: React.FC<FindingsSectionProps> = ({ loading, dataReady }) => {
   const [expanded, setExpanded] = React.useState<boolean>(true);
+
 
   const findings = [
     {
@@ -68,6 +73,9 @@ export const FindingsSection: React.FC = () => {
     <div className="glass-panel rounded-2xl border border-slate-800 p-5 space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
+          <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+            {loading ? 'Loading…' : dataReady ? '766,648 Records (2020–2025)' : 'Unavailable'}
+          </span>
           <Lightbulb className="w-5 h-5 text-amber-400" />
           <h2 className="text-base font-bold text-white">
             Key Empirical Findings & Real-World Insights
