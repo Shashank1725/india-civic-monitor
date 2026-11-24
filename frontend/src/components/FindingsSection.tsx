@@ -5,10 +5,10 @@ import {
   MapPin,
   TrendingUp,
   AlertCircle,
-  HelpCircle,
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
+
 interface FindingsSectionProps {
   loading: boolean;
   dataReady: boolean;
@@ -16,7 +16,6 @@ interface FindingsSectionProps {
 
 export const FindingsSection: React.FC<FindingsSectionProps> = ({ loading, dataReady }) => {
   const [expanded, setExpanded] = React.useState<boolean>(true);
-
 
   const findings = [
     {
@@ -31,9 +30,9 @@ export const FindingsSection: React.FC<FindingsSectionProps> = ({ loading, dataR
         { label: 'Road Maintenance', value: '111,535', sub: '14.55% of total' },
       ],
       insight:
-        'Over 80.4% of municipal friction points in Bengaluru stem from just three core utility services. Streetlight failures, power fluctuations, and garbage collection delays drive the bulk of everyday citizen reports.',
+        'Over 80.4% of municipal friction points in Bengaluru stem from just three core utility services. Streetlight failures, power fluctuations, and garbage collection delays drive the bulk of reporting activity.',
       limitations:
-        'Reflects citizen portal adoption and reporting propensity via BBMP Sahaya. High digital literacy wards log more tickets, which may overestimate service deficits relative to offline wards.',
+        'Reflects citizen portal adoption and reporting propensity via BBMP Sahaya. High digital-literacy wards may log more tickets than offline wards, overestimating relative service deficits.',
     },
     {
       id: 'finding-2',
@@ -47,9 +46,9 @@ export const FindingsSection: React.FC<FindingsSectionProps> = ({ loading, dataR
         { label: '#2 Ward (Horamavu)', value: '17,437', sub: '2.27% share' },
       ],
       insight:
-        'The top 5 grievance wards—Jnanabharathi (18,323), Horamavu (17,437), Rajarajeshwari Nagar (17,047), Begur (16,353), and Thanisandra (14,846)—are all rapidly expanding peripheral IT/residential corridors where civic infrastructure growth lags behind residential density.',
+        'The top 5 grievance wards are Jnanabharathi, Horamavu, Rajarajeshwari Nagar, Begur, and Thanisandra, all in expanding peripheral growth corridors.',
       limitations:
-        'Dataset records only ward-level names with 0% GPS pin coordinates. Sub-ward street clusters cannot be pinpointed without additional geocoding.',
+        'The source contains ward names but no GPS coordinates. Sub-ward street clusters cannot be located from this dataset alone.',
     },
     {
       id: 'finding-3',
@@ -63,9 +62,9 @@ export const FindingsSection: React.FC<FindingsSectionProps> = ({ loading, dataR
         { label: '2025 Pace (5.5 mos)', value: '126,974', sub: 'Sustained high volume' },
       ],
       insight:
-        'After 4 years of steady 10-15% growth (91,620 in 2020 to 119,140 in 2023), grievance volume surged to 207,016 in 2024. This was driven by a combination of extreme pre-monsoon storm damage and the civic authority’s active push of the BBMP Sahaya 2.0 digital portal and WhatsApp bot.',
+        'Grievance volume rose from 119,140 in 2023 to 207,016 in 2024. The increase may reflect both civic disruption and greater adoption of digital reporting channels.',
       limitations:
-        'Separating actual physical degradation from increased portal accessibility requires external weather and rainfall control variables.',
+        'The dataset cannot separate changes in actual service conditions from changes in portal awareness or intake volume without external weather and reporting-access data.',
     },
   ];
 
@@ -73,27 +72,32 @@ export const FindingsSection: React.FC<FindingsSectionProps> = ({ loading, dataR
     <div className="glass-panel rounded-2xl border border-slate-800 p-5 space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
+          <Lightbulb className="w-5 h-5 text-amber-400" />
+          <h2 className="text-base font-bold text-white">Key Empirical Findings & Real-World Insights</h2>
           <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
             {loading ? 'Loading…' : dataReady ? '766,648 Records (2020–2025)' : 'Unavailable'}
           </span>
-          <Lightbulb className="w-5 h-5 text-amber-400" />
-          <h2 className="text-base font-bold text-white">
-            Key Empirical Findings & Real-World Insights
-          </h2>
-          <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
-            766,648 Records (2020–2025)
-          </span>
         </div>
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="text-xs text-slate-400 hover:text-white flex items-center space-x-1"
-        >
-          <span>{expanded ? 'Collapse' : 'Expand'}</span>
-          {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-        </button>
+        {dataReady && !loading && (
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="text-xs text-slate-400 hover:text-white flex items-center space-x-1"
+          >
+            <span>{expanded ? 'Collapse' : 'Expand'}</span>
+            {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+        )}
       </div>
 
-      {expanded && (
+      {loading && (
+        <div className="py-8 text-center text-sm text-slate-400">Loading findings…</div>
+      )}
+
+      {!loading && !dataReady && (
+        <div className="py-8 text-center text-sm text-slate-400">Unavailable — findings could not be loaded.</div>
+      )}
+
+      {dataReady && !loading && expanded && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 pt-2">
           {findings.map((f) => {
             const Icon = f.icon;

@@ -8,6 +8,7 @@ interface OverviewCardsProps {
   anomalies: AnomalyItem[];
   filteredTotal: number;
   loading?: boolean;
+  dataReady?: boolean;
 }
 
 export const OverviewCards: React.FC<OverviewCardsProps> = ({
@@ -16,21 +17,16 @@ export const OverviewCards: React.FC<OverviewCardsProps> = ({
   anomalies,
   filteredTotal,
   loading = false,
+  dataReady = false,
 }) => {
-  const isDataReady = Boolean(metadata && metadata.total_records > 0 && !loading);
+  const isDataReady = Boolean(dataReady && metadata && metadata.total_records > 0 && !loading);
   const anomalyCount = anomalies.filter((a) => a.is_anomaly).length;
 
   const cards = [
     {
       title: 'Total Grievances',
-      value: loading
-        ? 'Loading...'
-        : metadata && metadata.total_records > 0
-        ? metadata.total_records.toLocaleString()
-        : 'Unavailable',
-      subtitle: isDataReady
-        ? `${metadata?.days_span || 0} days recorded (2020–2025)`
-        : 'Connecting to database snapshot...',
+      value: loading ? 'Loading…' : isDataReady ? metadata!.total_records.toLocaleString() : 'Unavailable',
+      subtitle: isDataReady ? `${metadata?.days_span || 0} days recorded (2020–2025)` : 'Awaiting successful data load...',
       icon: Files,
       color: 'from-blue-500/20 to-indigo-500/10',
       border: 'border-blue-500/30',
@@ -38,11 +34,7 @@ export const OverviewCards: React.FC<OverviewCardsProps> = ({
     },
     {
       title: 'Current Filter Volume',
-      value: loading
-        ? 'Loading...'
-        : isDataReady
-        ? filteredTotal.toLocaleString()
-        : 'Unavailable',
+      value: loading ? 'Loading…' : isDataReady ? filteredTotal.toLocaleString() : 'Unavailable',
       subtitle: isDataReady ? 'Complaints in selected criteria' : 'Awaiting filtered aggregate...',
       icon: Layers,
       color: 'from-emerald-500/20 to-teal-500/10',
@@ -51,11 +43,7 @@ export const OverviewCards: React.FC<OverviewCardsProps> = ({
     },
     {
       title: 'BBMP Monitored Wards',
-      value: loading
-        ? 'Loading...'
-        : isDataReady
-        ? metadata!.total_wards.toString()
-        : 'Unavailable',
+      value: loading ? 'Loading…' : isDataReady ? metadata!.total_wards.toString() : 'Unavailable',
       subtitle: isDataReady ? '100% Ward name coverage' : 'Loading municipal roster...',
       icon: MapPin,
       color: 'from-purple-500/20 to-violet-500/10',
@@ -64,11 +52,7 @@ export const OverviewCards: React.FC<OverviewCardsProps> = ({
     },
     {
       title: 'Spike Anomalies Flagged',
-      value: loading
-        ? 'Loading...'
-        : isDataReady
-        ? anomalyCount.toString()
-        : 'Unavailable',
+      value: loading ? 'Loading…' : isDataReady ? anomalyCount.toString() : 'Unavailable',
       subtitle: isDataReady ? 'Statistically anomalous (Z ≥ 2.5σ)' : 'Baseline evaluation pending...',
       icon: AlertTriangle,
       color: anomalyCount > 0 && isDataReady ? 'from-amber-500/20 to-orange-500/10' : 'from-slate-800 to-slate-850',
@@ -77,11 +61,7 @@ export const OverviewCards: React.FC<OverviewCardsProps> = ({
     },
     {
       title: 'Spatial Completeness',
-      value: loading
-        ? 'Loading...'
-        : isDataReady
-        ? '100% Ward Level'
-        : 'Unavailable',
+      value: loading ? 'Loading…' : isDataReady ? '100% Ward Level' : 'Unavailable',
       subtitle: isDataReady ? 'Choropleth (0% Lat/Lon pins in source)' : 'Spatial audit pending...',
       icon: CheckCircle2,
       color: 'from-cyan-500/20 to-blue-500/10',
@@ -90,11 +70,7 @@ export const OverviewCards: React.FC<OverviewCardsProps> = ({
     },
     {
       title: 'Pipeline Ingestion Audit',
-      value: loading
-        ? 'Loading...'
-        : isDataReady
-        ? '0 Duplicates'
-        : 'Unavailable',
+      value: loading ? 'Loading…' : isDataReady ? '0 Duplicates' : 'Unavailable',
       subtitle: isDataReady ? 'Strict unique constraint & upsert' : 'Verification pending...',
       icon: ShieldCheck,
       color: 'from-teal-500/20 to-emerald-500/10',
@@ -108,14 +84,9 @@ export const OverviewCards: React.FC<OverviewCardsProps> = ({
       {cards.map((c, i) => {
         const Icon = c.icon;
         return (
-          <div
-            key={i}
-            className={`p-4 rounded-xl border bg-gradient-to-br ${c.color} ${c.border} glass-panel glass-panel-hover flex flex-col justify-between`}
-          >
+          <div key={i} className={`p-4 rounded-xl border bg-gradient-to-br ${c.color} ${c.border} glass-panel flex flex-col justify-between`}>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">
-                {c.title}
-              </span>
+              <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">{c.title}</span>
               <Icon className={`w-5 h-5 ${c.iconColor}`} />
             </div>
             <div className="mt-3">
