@@ -38,14 +38,10 @@ export const AnomalyTable: React.FC<AnomalyTableProps> = ({ anomalies, onSelectW
           <AlertTriangle className="w-5 h-5 text-amber-400" />
           <h3 className="text-base font-bold text-white">Historical Weekday Anomaly Surveillance Feed</h3>
           <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20 font-semibold">
-<<<<<<< HEAD
-            {loading ? 'Loading…' : error ? 'Unavailable' : `${anomalies.length} Flagged Events`}
-=======
-            {flaggedCount} Flagged
+            {loading ? 'Loading…' : error ? 'Unavailable' : `${flaggedCount} Flagged`}
           </span>
           <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
             {anomalies.length} Evaluated Observations
->>>>>>> f0a0522 (modification 2)
           </span>
         </div>
       </div>
@@ -53,7 +49,7 @@ export const AnomalyTable: React.FC<AnomalyTableProps> = ({ anomalies, onSelectW
       {loading ? (
         <div className="py-12 text-center text-slate-400 flex flex-col items-center justify-center space-y-2">
           <div className="w-6 h-6 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm">Loading records… Evaluating historical weekday rolling baselines & Z-scores.</p>
+          <p className="text-sm">Loading records… Evaluating historical weekday rolling baselines &amp; Z-scores.</p>
         </div>
       ) : error ? (
         <div className="py-12 text-center text-slate-400">
@@ -68,7 +64,17 @@ export const AnomalyTable: React.FC<AnomalyTableProps> = ({ anomalies, onSelectW
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs text-slate-300">
             <thead className="text-[11px] uppercase tracking-wider text-slate-400 bg-slate-900/60 border-b border-slate-800">
-              <tr><th className="py-3 px-4">Date</th><th className="py-3 px-4">Ward / Area</th><th className="py-3 px-4">Category</th><th className="py-3 px-4 text-center">Observed</th><th className="py-3 px-4 text-center">Baseline (μ ± σ)</th><th className="py-3 px-4 text-center">Z-Score</th><th className="py-3 px-4">Severity</th><th className="py-3 px-4">Explanation</th><th className="py-3 px-4 text-right">Action</th></tr>
+              <tr>
+                <th className="py-3 px-4">Date</th>
+                <th className="py-3 px-4">Ward / Area</th>
+                <th className="py-3 px-4">Category</th>
+                <th className="py-3 px-4 text-center">Observed</th>
+                <th className="py-3 px-4 text-center">Baseline (Mean ± SD)</th>
+                <th className="py-3 px-4 text-center">Z-Score</th>
+                <th className="py-3 px-4">Severity</th>
+                <th className="py-3 px-4">Explanation</th>
+                <th className="py-3 px-4 text-right">Action</th>
+              </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
               {anomalies.map((a, i) => (
@@ -81,7 +87,14 @@ export const AnomalyTable: React.FC<AnomalyTableProps> = ({ anomalies, onSelectW
                   <td className="py-3 px-4 text-center font-mono font-bold text-emerald-400">+{a.z_score.toFixed(1)}σ</td>
                   <td className="py-3 px-4">{getSeverityBadge(a.severity)}</td>
                   <td className="py-3 px-4 text-slate-400 max-w-sm">{a.explanation}</td>
-                  <td className="py-3 px-4 text-right"><button onClick={(e) => { e.stopPropagation(); onSelectWard(a.ward_name); }} className="inline-flex items-center gap-1 text-emerald-400 text-xs font-semibold"><span>Drill down</span><ArrowUpRight className="w-3.5 h-3.5" /></button></td>
+                  <td className="py-3 px-4 text-right">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onSelectWard(a.ward_name); }}
+                      className="inline-flex items-center gap-1 text-emerald-400 text-[11px] font-semibold hover:text-emerald-300"
+                    >
+                      View <ArrowUpRight className="w-3 h-3" />
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
