@@ -98,7 +98,7 @@ export const QualitySection: React.FC<QualitySectionProps> = ({ metadata }) => {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs text-slate-300">
               <thead className="text-[11px] uppercase tracking-wider text-slate-400 bg-slate-900/60 border-b border-slate-800">
-                <tr><th className="py-3 px-4">Validation Rule</th><th className="py-3 px-4 text-center">Total Tested</th><th className="py-3 px-4 text-center">Passed</th><th className="py-3 px-4 text-center">Failed</th><th className="py-3 px-4 text-center">Failure Rate</th><th className="py-3 px-4">Status & Rule Details</th></tr>
+                <tr><th className="py-3 px-4">Validation Rule</th><th className="py-3 px-4 text-center">Total Tested</th><th className="py-3 px-4 text-center">Passed</th><th className="py-3 px-4 text-center">Failed</th><th className="py-3 px-4 text-center">Failure Rate</th><th className="py-3 px-4">Details</th></tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
                 {metrics.map((m, i) => {
@@ -110,7 +110,7 @@ export const QualitySection: React.FC<QualitySectionProps> = ({ metadata }) => {
                       <td className="py-3 px-4 text-center text-emerald-400">{m.passed.toLocaleString()}</td>
                       <td className="py-3 px-4 text-center text-rose-400">{m.failed.toLocaleString()}</td>
                       <td className="py-3 px-4 text-center">{m.failure_rate.toFixed(3)}%</td>
-                      <td className="py-3 px-4"><div className="flex items-center gap-1.5"><AlertTriangle className="w-4 h-4" /><span>{m.details || (isClean ? 'Passed verification criteria' : 'Verification failed')}</span></div></td>
+                      <td className="py-3 px-4"><div className="flex items-center gap-1.5"><AlertTriangle className="w-4 h-4" /><span>{m.details || (isClean ? 'Passed verification criteria' : 'Verification issues found')}</span></div></td>
                     </tr>
                   );
                 })}
@@ -128,14 +128,14 @@ export const QualitySection: React.FC<QualitySectionProps> = ({ metadata }) => {
         {loading ? (
           <div className="py-10 text-center text-sm text-slate-400">Loading ingestion runs…</div>
         ) : !ready ? (
-          <div class="py-10 text-center text-sm text-slate-400">Ingestion run data unavailable.</div>
+          <div className="py-10 text-center text-sm text-slate-400">Ingestion run data unavailable.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs text-slate-300">
-              <thead className="text-[11px] uppercase"><tr><th className="py-3 px-4">Run UUID</th><th className="py-3 px-4">Started At</th><th className="py-3 px-4">Status</th><th className="py-3 px-4 text-center">Records Read</th><th className="py-3 px-4 text-center">Inserted</th><th className="py-3 px-4 text-center">Skipped</th><th className="py-3 px-4 text-center">Rejected</th></tr></thead>
+              <thead className="text-[11px] uppercase"><tr><th className="py-3 px-4">Run UUID</th><th className="py-3 px-4">Started At</th><th className="py-3 px-4">Status</th><th className="py-3 px-4 text-center">Read</th><th className="py-3 px-4 text-center">Inserted</th><th className="py-3 px-4 text-center">Skipped</th><th className="py-3 px-4 text-center">Rejected</th></tr></thead>
               <tbody className="divide-y divide-slate-800/60">
                 {runs.map((r) => (
-                  <tr key={r.id}><td className="py-3 px-4 font-mono text-slate-400">{r.run_uuid}</td><td className="py-3 px-4">{new Date(r.started_at).toLocaleString()}</td><td className="py-3 px-4">{r.status}</td><td className="py-3 px-4 text-center">{r.total_read.toLocaleString()}</td><td className="py-3 px-4 text-center">{r.total_inserted.toLocaleString()}</td><td className="py-3 px-4 text-center">{r.total_skipped.toLocaleString()}</td><td className="py-3 px-4 text-center">{r.total_rejected.toLocaleString()}</td></tr>
+                  <tr key={r.id}><td className="py-3 px-4 font-mono text-slate-400">{r.run_uuid}</td><td className="py-3 px-4">{new Date(r.started_at).toLocaleString()}</td><td className="py-3 px-4">{r.status}</td><td className="py-3 px-4 text-center">{r.total_read.toLocaleString()}</td><td className="py-3 px-4 text-center text-emerald-400">{r.total_inserted.toLocaleString()}</td><td className="py-3 px-4 text-center">{r.total_skipped.toLocaleString()}</td><td className="py-3 px-4 text-center text-rose-400">{r.total_rejected.toLocaleString()}</td></tr>
                 ))}
               </tbody>
             </table>
