@@ -61,6 +61,7 @@ export const FindingsSection: React.FC<FindingsSectionProps> = ({ loading, dataR
         { label: '2024 Volume', value: '207,016', sub: '+73.7% annual jump' },
         { label: '2025 Pace (5.5 mos)', value: '126,974', sub: 'Sustained high volume' },
       ],
+      
       insight:
         'Grievance volume rose from 119,140 in 2023 to 207,016 in 2024. The increase may reflect both civic disruption and greater adoption of digital reporting channels.',
       limitations:

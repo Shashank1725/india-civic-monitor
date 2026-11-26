@@ -61,8 +61,10 @@ export const OverviewCards: React.FC<OverviewCardsProps> = ({
     },
     {
       title: 'Spatial Completeness',
-      value: loading ? 'Loading…' : isDataReady ? '100% Ward Level' : 'Unavailable',
-      subtitle: isDataReady ? 'Choropleth (0% Lat/Lon pins in source)' : 'Spatial audit pending...',
+      value: loading ? 'Loading…' : isDataReady ? '100% Ward Name' : 'Unavailable',
+      subtitle: isDataReady
+        ? 'Ward name present (0% Lat/Lon; see Map for polygon match)'
+        : 'Spatial audit pending...',
       icon: CheckCircle2,
       color: 'from-cyan-500/20 to-blue-500/10',
       border: 'border-cyan-500/30',

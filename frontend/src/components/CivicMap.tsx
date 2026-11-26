@@ -23,6 +23,70 @@ function cleanName(s: string): string {
     .replace(/[^a-z0-9]/g, '');
 }
 
+// Documented 1-to-1 spelling aliases between the 199 BBMP Sahaya dataset ward names
+// and the 243 KGIS GeoJSON ward names (KGISWardName).
+const WARD_ALIAS_MAP: Record<string, string> = {
+  anjanapur: 'anjanapura',
+  bagalagunte: 'bagalakunte',
+  banaswadi: 'banasavadi',
+  bilekahalli: 'bilekhalli',
+  binnipet: 'binnipete',
+  chamrajpet: 'chamrajapet',
+  chikpete: 'chickpete',
+  chowdeshwari: 'chowdeswari',
+  cottonpet: 'cottonpete',
+  dattathreyatemple: 'dattatreyatemple',
+  doddabidarkallu: 'doddabidarakallu',
+  galianjaneyaswamytemple: 'galianjenayatemple',
+  ganeshmandira: 'ganeshmandir',
+  garudacharpalya: 'garudacharplaya',
+  gayathrinagar: 'gayithrinagar',
+  govindrajanagar: 'govindarajanagar',
+  hagadoor: 'hagadur',
+  hanumanthanagar: 'hanumanthnagar',
+  hebbal: 'hebbala',
+  hoodi: 'hudi',
+  jagajeevanramnagar: 'jagajivanaramnagar',
+  kacharakanahalli: 'kacharkanahalli',
+  kavalbyrasandra: 'kavalbairasandra',
+  madiwala: 'madivala',
+  mahalakshmipura: 'mahalakshimpura',
+  malleshwaram: 'malleswaram',
+  marathalli: 'marathahalli',
+  maruthimandira: 'maruthimandir',
+  mathikere: 'mattikere',
+  moodalapalya: 'mudalapalya',
+  nayandanahalli: 'nayandahalli',
+  peenyaindustrialarea: 'peenya',
+  puttenahalli: 'puttenahallisarakkilake',
+  rajagopalanagar: 'rajagopalnagar',
+  sagayapura: 'sagayarapura',
+  sanjaynagar: 'sanjayanagar',
+  shankaramata: 'shankarmatt',
+  shanthalanagar: 'shantalanagar',
+  shettyhalli: 'shettihalli',
+  singasandra: 'hsrsingasandra',
+  srirammandira: 'sriramamandir',
+  sudamnagar: 'sudhamnagar',
+  sudduguntepalya: 'suddaguntepalya',
+  ullalu: 'ullal',
+  vannarpet: 'vannarapete',
+  vasanthapura: 'vasanthpura',
+  vidyapeetha: 'vidyapeeta',
+  vignananagar: 'vijnananagar',
+  vijanapura: 'vijinapura',
+  vijaynagar: 'vijayanagar',
+  visvesvarapura: 'vishveshwarapura',
+  vrushabhavatinagar: 'vrisabhavathinagar',
+  yadiyur: 'yediyur',
+  yelahankaoldsatellitetown: 'yelahankasatellitetown',
+};
+
+function resolveWardKey(rawName: string): string {
+  const c = cleanName(rawName);
+  return WARD_ALIAS_MAP[c] || c;
+}
+
 // Component to dynamically fit map bounds when selecting a ward
 function MapController({ selectedWard, geoData }: { selectedWard: string | null; geoData: any }) {
   const map = useMap();
@@ -79,7 +143,8 @@ export const CivicMap: React.FC<CivicMapProps> = ({
   const areaCountMap = useMemo(() => {
     const map = new Map<string, number>();
     for (const a of areas) {
-      map.set(cleanName(a.ward_name), a.total_complaints);
+      const key = resolveWardKey(a.ward_name);
+      map.set(key, (map.get(key) || 0) + a.total_complaints);
     }
     return map;
   }, [areas]);
@@ -88,11 +153,29 @@ export const CivicMap: React.FC<CivicMapProps> = ({
     const set = new Set<string>();
     for (const a of anomalies) {
       if (a.is_anomaly) {
-        set.add(cleanName(a.ward_name));
+        set.add(resolveWardKey(a.ward_name));
       }
     }
     return set;
   }, [anomalies]);
+
+  const mappedStats = useMemo(() => {
+    if (!geoData?.features || !areas.length) {
+      return { matchedWards: 0, totalWards: areas.length };
+    }
+    const geoKeys = new Set<string>(
+      geoData.features.map((f: any) =>
+        cleanName(f.properties?.KGISWardName || f.properties?.WARD_NAME || '')
+      )
+    );
+    let matchedWards = 0;
+    for (const a of areas) {
+      if (geoKeys.has(resolveWardKey(a.ward_name))) {
+        matchedWards += 1;
+      }
+    }
+    return { matchedWards, totalWards: areas.length };
+  }, [geoData, areas]);
 
   // Max complaints in current filter to scale color
   const maxComplaints = useMemo(() => {
@@ -101,7 +184,8 @@ export const CivicMap: React.FC<CivicMapProps> = ({
   }, [areas]);
 
   // Color generator for choropleth
-  const getColor = (count: number, isAnomalous: boolean) => {
+  const getColor = (count: number | undefined, isAnomalous: boolean) => {
+    if (count === undefined) return '#0f172a'; // Unmapped polygon
     if (isAnomalous) return '#f43f5e'; // Bright Rose/Crimson for anomaly
     if (count === 0) return '#1e293b';
 
@@ -118,17 +202,18 @@ export const CivicMap: React.FC<CivicMapProps> = ({
     const wardName = props.KGISWardName || props.WARD_NAME || '';
     const cleaned = cleanName(wardName);
 
-    const count = areaCountMap.get(cleaned) || 0;
+    const count = areaCountMap.get(cleaned);
+    const isUnmapped = count === undefined;
     const isAnomalous = anomalySet.has(cleaned);
-    const isSelected = selectedWard && cleanName(selectedWard) === cleaned;
+    const isSelected = selectedWard && resolveWardKey(selectedWard) === cleaned;
 
     return {
       fillColor: getColor(count, isAnomalous),
       weight: isSelected ? 3 : isAnomalous ? 2.5 : 1,
       opacity: 0.9,
-      color: isSelected ? '#38bdf8' : isAnomalous ? '#f43f5e' : '#334155',
-      fillOpacity: isSelected ? 0.85 : isAnomalous ? 0.75 : 0.6,
-      dashArray: isSelected ? '4' : undefined,
+      color: isSelected ? '#38bdf8' : isAnomalous ? '#f43f5e' : isUnmapped ? '#475569' : '#334155',
+      fillOpacity: isSelected ? 0.85 : isAnomalous ? 0.75 : isUnmapped ? 0.35 : 0.6,
+      dashArray: isSelected ? '4' : isUnmapped ? '2 3' : undefined,
     };
   };
 
@@ -137,8 +222,12 @@ export const CivicMap: React.FC<CivicMapProps> = ({
     const wardName = props.KGISWardName || props.WARD_NAME || 'Unknown Ward';
     const cleaned = cleanName(wardName);
 
-    const count = areaCountMap.get(cleaned) || 0;
+    const count = areaCountMap.get(cleaned);
     const isAnomalous = anomalySet.has(cleaned);
+    const countLabel =
+      count === undefined
+        ? '<strong style="color: #94a3b8;">Unmapped</strong>'
+        : `<strong style="color: #38bdf8;">${count.toLocaleString()}</strong>`;
 
     layer.bindTooltip(
       `
@@ -148,7 +237,7 @@ export const CivicMap: React.FC<CivicMapProps> = ({
           ${isAnomalous ? '<span style="background: #f43f5e; color: #fff; padding: 1px 4px; border-radius: 4px; font-size: 10px;">ANOMALY</span>' : ''}
         </div>
         <div style="color: #94a3b8; margin-top: 2px;">
-          Complaints: <strong style="color: #38bdf8;">${count.toLocaleString()}</strong>
+          ${count === undefined ? 'Status:' : 'Complaints:'} ${countLabel}
         </div>
       </div>
       `,
@@ -158,7 +247,7 @@ export const CivicMap: React.FC<CivicMapProps> = ({
     layer.on({
       click: () => {
         // Find corresponding DB ward name if possible
-        const matchingArea = areas.find((a) => cleanName(a.ward_name) === cleaned);
+        const matchingArea = areas.find((a) => resolveWardKey(a.ward_name) === cleaned);
         onSelectWard(matchingArea ? matchingArea.ward_name : wardName);
       },
       mouseover: (e: any) => {
@@ -185,12 +274,14 @@ export const CivicMap: React.FC<CivicMapProps> = ({
             Bengaluru Ward Disruption Choropleth
           </h2>
           <span className="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
-            199 BBMP Wards
+            {mappedStats.totalWards > 0
+              ? `${mappedStats.matchedWards} / ${mappedStats.totalWards} Wards Mapped`
+              : '199 BBMP Wards'}
           </span>
         </div>
 
         {/* Legend */}
-        <div className="flex items-center space-x-3 text-xs text-slate-400">
+        <div className="flex items-center space-x-3 text-xs text-slate-400 flex-wrap gap-y-1">
           <div className="flex items-center space-x-1.5">
             <span className="w-3 h-3 rounded-sm bg-[#f43f5e] inline-block shadow-sm" />
             <span className="text-rose-400 font-medium">Anomaly Spike</span>
@@ -206,6 +297,10 @@ export const CivicMap: React.FC<CivicMapProps> = ({
           <div className="flex items-center space-x-1.5">
             <span className="w-3 h-3 rounded-sm bg-[#0284c7] inline-block" />
             <span>Low</span>
+          </div>
+          <div className="flex items-center space-x-1.5">
+            <span className="w-3 h-3 rounded-sm bg-[#0f172a] border border-slate-600 inline-block" />
+            <span>Unmapped</span>
           </div>
         </div>
       </div>

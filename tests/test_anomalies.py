@@ -99,3 +99,29 @@ def test_zero_variance_handled_gracefully():
     )
     # Shouldn't raise ZeroDivisionError, and shouldn't falsely flag 1 complaint
     assert res.is_anomaly is False
+
+def test_bapuji_nagar_electrical_walktrhough_regression():
+    target_date=date(2025,6,16)
+    counts_map={
+        date(2025,6,9):2,
+        date(2025,5,26):1,
+        date(2025,5,19):1,
+        date(2025,5,5):1,
+        date(2025,4,28):1,
+    }
+    mean,std,n=compute_weekday_baseline(counts_map,target_date,lookback_weeks=8)
+    assert n==5
+    assert round(mean,2) ==1.20
+
+    res =evaluate_observation(
+        target_date=target_date,
+        ward_name="Bapuji Nagar",
+        category="Electrical",
+        current_count=24,
+        mean=mean,
+        std=std,
+        sample_size=n,
+    )
+    assert res.is_anomaly is True
+    assert res.severity =="CRITICAL"
+    assert round(res.z_score,2)==45.60

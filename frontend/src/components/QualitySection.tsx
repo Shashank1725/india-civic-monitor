@@ -60,10 +60,12 @@ export const QualitySection: React.FC<QualitySectionProps> = ({ metadata }) => {
             <FileCheck className="w-4 h-4 text-teal-400" /><span>Geographic Completeness</span>
           </div>
           <div className="text-2xl font-bold text-teal-400 mt-2">
-            {loading ? 'Loading…' : ready ? '100.0% Ward-Level' : 'Unavailable'}
+            {loading ? 'Loading…' : ready ? '100.0% Ward Name Present' : 'Unavailable'}
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            {ready ? 'Ward coverage verified; source data has no GPS pins' : 'Spatial audit pending'}
+            {ready
+              ? '0% missing ward names in source; 0% GPS pins. Map polygon matching is tracked separately on the Choropleth.'
+              : 'Spatial audit pending'}
           </p>
         </div>
 
